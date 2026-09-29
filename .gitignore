@@ -1,0 +1,7 @@
+/mihomo/config.yaml
+/warp/warp.conf
+*.env
+*.local
+*.secret
+cache.db
+menu.sh

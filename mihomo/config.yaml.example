@@ -1,0 +1,72 @@
+mixed-port: 7890
+allow-lan: false
+bind-address: 127.0.0.1
+mode: rule
+log-level: info
+ipv6: true
+
+tun:
+  enable: true
+  stack: system
+  device: Meta
+  auto-route: true
+  auto-redirect: false
+  strict-route: false
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+  route-exclude-address:
+    - 'REPLACE_WITH_HINET_IPV6/128'
+    - 'REPLACE_WITH_WARP_ENDPOINT_IPV6/128'
+
+dns:
+  enable: true
+  listen: 127.0.0.1:1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-range6: 'fdfe:dcba:9876::1/64'
+  fake-ip-filter-mode: rule
+  fake-ip-filter:
+    - DOMAIN-SUFFIX,anthropic.com,fake-ip
+    - DOMAIN-SUFFIX,claude.ai,fake-ip
+    - DOMAIN-SUFFIX,claude.com,fake-ip
+    - DOMAIN-SUFFIX,claudeusercontent.com,fake-ip
+    - MATCH,real-ip
+  nameserver:
+    - 2606:4700:4700::1111
+    - 1.1.1.1
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  sniff:
+    TLS:
+      ports: [443]
+    HTTP:
+      ports: [80, 8080-8880]
+    QUIC:
+      ports: [443]
+
+proxies:
+  - name: hinet
+    type: vless
+    server: 'REPLACE_WITH_HINET_IPV6'
+    port: REPLACE_WITH_HINET_PORT
+    uuid: 'REPLACE_WITH_HINET_UUID'
+    udp: true
+    flow: xtls-rprx-vision
+    tls: true
+    servername: REPLACE_WITH_REALITY_SERVERNAME
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: 'REPLACE_WITH_REALITY_PUBLIC_KEY'
+      short-id: 'REPLACE_WITH_REALITY_SHORT_ID'
+
+rules:
+  - DOMAIN-SUFFIX,anthropic.com,hinet
+  - DOMAIN-SUFFIX,claude.ai,hinet
+  - DOMAIN-SUFFIX,claude.com,hinet
+  - DOMAIN-SUFFIX,claudeusercontent.com,hinet
+  - MATCH,DIRECT

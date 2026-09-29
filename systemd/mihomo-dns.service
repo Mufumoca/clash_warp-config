@@ -1,0 +1,14 @@
+[Unit]
+Description=Local DNS split for Claude and Anthropic
+Wants=network-online.target
+After=network-online.target
+Before=wg-quick@warp.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/dnsmasq --no-daemon --conf-file=/root/.config/mihomo/dnsmasq.conf
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
