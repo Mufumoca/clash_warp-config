@@ -1,14 +1,16 @@
 # IPv6-only VPS: WARP IPv4 + Mihomo Claude 分流
 
-这套配置用于有原生 IPv6、无原生 IPv4 的 Debian VPS：普通 IPv4 通过 WARP 出站，普通 IPv6 保持原生出口；`anthropic.com`、`claude.ai`、`claude.com`、`claudeusercontent.com` 及其子域名通过 Mihomo 的 `hinet` VLESS Reality 节点。Mihomo 同时提供仅监听本机的 HTTP/SOCKS 混合端口 `127.0.0.1:7890`。
+这套配置用于有原生 IPv6、无原生 IPv4 的 Debian VPS：普通 IPv4 通过 WARP 出站，普通 IPv6 保持原生出口；Anthropic、Claude 及下述补充域名通过 Mihomo 的 `hinet` VLESS Reality 节点。Mihomo 同时提供仅监听本机的 HTTP/SOCKS 混合端口 `127.0.0.1:7890`。
 
 仓库只存放公开模板。**不要提交** `/etc/wireguard/warp.conf`、WARP 账户文件、填入节点参数后的 `config.yaml`、缓存、日志或任何密钥。
 
 ## 设计
 
-启动顺序是 `mihomo-dns` → `wg-quick@warp` → `mihomo`。`dnsmasq` 仅把上述四组域名交给 Mihomo DNS；其他域名使用独立的 IPv6 上游 DNS。因此 WARP 端点不会被解析为 fake-IP，Mihomo 停止时普通域名仍可解析。
+启动顺序是 `mihomo-dns` → `wg-quick@warp` → `mihomo`。`dnsmasq` 只把列出的域名和常见 Datadog、Sift 后缀交给 Mihomo DNS；其他域名使用独立的 IPv6 上游 DNS。因此 WARP 端点不会被解析为 fake-IP，Mihomo 停止时普通域名仍可解析。
 
-Anthropic 域名得到 `198.18.0.0/16` 或 `fdfe:dcba:9876::/64` 中的 fake-IP。IPv4 fake-IP 的主路由必须指向 Mihomo TUN：WARP 重连后，其策略路由可能排在 Mihomo 前面，单靠 `tun.auto-route` 会让 IPv4 fake-IP 错误地进入 WARP。`mihomo-fakeip-route` 在 Mihomo 每次启动时添加这条窄范围路由。Mihomo 对匹配域名只选 `hinet`，没有 `DIRECT` 备用节点；不匹配的流量走 `DIRECT`，沿主机当前出口分别使用 WARP IPv4 或原生 IPv6。
+匹配域名得到 `198.18.0.0/16` 或 `fdfe:dcba:9876::/64` 中的 fake-IP。IPv4 fake-IP 的主路由必须指向 Mihomo TUN：WARP 重连后，其策略路由可能排在 Mihomo 前面，单靠 `tun.auto-route` 会让 IPv4 fake-IP 错误地进入 WARP。`mihomo-fakeip-route` 在 Mihomo 每次启动时为 fake-IP 和补充的 `160.79.104.0/21` 各添加一条窄范围路由。Mihomo 对匹配项只选 `hinet`，没有 `DIRECT` 备用节点；不匹配的流量走 `DIRECT`，沿主机当前出口分别使用 WARP IPv4 或原生 IPv6。`IP-ASN` 规则首次使用时会下载 ASN 数据库。
+
+域名规则涵盖 `anthropic.com`、`claude.ai`、`claude.com`、`clau.de`、`claudemcpclient.com`、`claudemcpcontent.com`、`claudeusercontent.com`，以及模板中列出的 CDN、认证、内容、遥测和客服域名。`sentry.io`、`statsigapi.net`、`intercom.io`、`intercomcdn.com` 与 `datadog`、`sift` 关键词属于共享服务；这些域名上的其他应用流量也会走 `hinet`。
 
 ## 前提
 
@@ -106,6 +108,7 @@ systemctl is-active mihomo-dns wg-quick@warp mihomo
 systemctl is-enabled mihomo-dns wg-quick@warp mihomo
 getent ahostsv4 api.anthropic.com
 ip -4 route get 198.18.0.4
+ip -4 route get 160.79.104.1
 curl -4 -sS -o /dev/null -w '%{http_code}\n' https://api.anthropic.com/
 curl -6 -sS -o /dev/null -w '%{http_code}\n' https://claude.ai/
 journalctl -u mihomo -n 100 --no-pager | grep -E 'api.anthropic.com|claude.ai'
@@ -113,10 +116,10 @@ curl -4 -sS https://www.cloudflare.com/cdn-cgi/trace
 curl -6 -sS https://www.cloudflare.com/cdn-cgi/trace
 ```
 
-`getent` 应返回 fake-IP；该 IPv4 地址应由 `Meta` TUN 路由。日志中的 Anthropic / Claude 行必须显示 `using hinet`。Cloudflare trace 对普通 IPv4 应显示 `warp=on`，对原生 IPv6 应显示 VPS 的 IPv6 且 `warp=off`。`claude.ai` 可能返回网站的 `403`，应以 Mihomo 命中日志判断出站规则，而不是把 HTTP 状态码当成出口证明。
+`getent` 应返回 fake-IP；该地址和 `160.79.104.1` 都应由 `Meta` TUN 路由。日志中的 Anthropic / Claude 行必须显示 `using hinet`。Cloudflare trace 对普通 IPv4 应显示 `warp=on`，对原生 IPv6 应显示 VPS 的 IPv6 且 `warp=off`。`claude.ai` 可能返回网站的 `403`，应以 Mihomo 命中日志判断出站规则，而不是把 HTTP 状态码当成出口证明。
 
 如果 DNS 切换失败，先把备份的 `/etc/resolvconf.conf.before-clash-warp` 恢复到 `/etc/resolvconf.conf` 并执行 `resolvconf -u`；这不需要停止 WARP。不要在只有一条 SSH 连接时直接重启整机测试。
 
 ## 边界
 
-规则匹配的是这些域名。应用内 DoH、硬编码目标 IP，或者自定义 `ANTHROPIC_BASE_URL` 指向其他域名，都可能绕过这组域名规则。不要把共享的 `github.com`、`storage.googleapis.com` 或 `registry.npmjs.org` 全域名加入 `hinet`，除非明确希望这些服务的全部流量也走该节点。
+规则匹配的是列出的域名、IP 段和 ASN。`dnsmasq` 无法按任意子串匹配 DNS 查询，因此 `DOMAIN-KEYWORD,datadog` 和 `DOMAIN-KEYWORD,sift` 中未列入 DNS 配置的域名依赖 Mihomo 的 TUN/SNI 嗅探，不能保证所有协议都命中。IPv4 ASN 中除 `160.79.104.0/21` 外的地址仍可能先被 WARP 策略路由捕获。应用内 DoH、硬编码目标 IP，或者自定义 `ANTHROPIC_BASE_URL` 指向其他域名，也可能绕过域名规则。不要把共享的 `github.com`、`storage.googleapis.com` 或 `registry.npmjs.org` 全域名加入 `hinet`，除非明确希望这些服务的全部流量也走该节点。

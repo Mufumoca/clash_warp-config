@@ -5,6 +5,7 @@ attempt=0
 while [ "$attempt" -lt 50 ]; do
   if /usr/sbin/ip link show dev Meta >/dev/null 2>&1; then
     /usr/sbin/ip -4 route replace 198.18.0.0/16 via 198.18.0.2 dev Meta
+    /usr/sbin/ip -4 route replace 160.79.104.0/21 via 198.18.0.2 dev Meta
     exit 0
   fi
   attempt=$((attempt + 1))

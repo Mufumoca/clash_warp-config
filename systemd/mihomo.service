@@ -9,6 +9,7 @@ Type=simple
 ExecStart=/usr/local/bin/mihomo -d /root/.config/mihomo -f /root/.config/mihomo/config.yaml
 ExecStartPost=/usr/local/libexec/mihomo-fakeip-route
 ExecStopPost=-/usr/sbin/ip -4 route del 198.18.0.0/16 via 198.18.0.2 dev Meta
+ExecStopPost=-/usr/sbin/ip -4 route del 160.79.104.0/21 via 198.18.0.2 dev Meta
 Restart=on-failure
 RestartSec=5
 UMask=0077

@@ -31,7 +31,22 @@ dns:
     - DOMAIN-SUFFIX,anthropic.com,fake-ip
     - DOMAIN-SUFFIX,claude.ai,fake-ip
     - DOMAIN-SUFFIX,claude.com,fake-ip
+    - DOMAIN-SUFFIX,clau.de,fake-ip
+    - DOMAIN-SUFFIX,claudemcpclient.com,fake-ip
+    - DOMAIN-SUFFIX,claudemcpcontent.com,fake-ip
     - DOMAIN-SUFFIX,claudeusercontent.com,fake-ip
+    - DOMAIN,servd-anthropic-website.b-cdn.net,fake-ip
+    - DOMAIN,anthropic.com.cdn.cloudflare.net,fake-ip
+    - DOMAIN,anthropic.auth0.com,fake-ip
+    - DOMAIN,anthropic-com.ghost.io,fake-ip
+    - DOMAIN-SUFFIX,sentry.io,fake-ip
+    - DOMAIN-SUFFIX,statsigapi.net,fake-ip
+    - DOMAIN,browser-intake-us5-datadoghq.com,fake-ip
+    - DOMAIN-KEYWORD,datadog,fake-ip
+    - DOMAIN-KEYWORD,sift,fake-ip
+    - DOMAIN-SUFFIX,intercom.io,fake-ip
+    - DOMAIN-SUFFIX,intercomcdn.com,fake-ip
+    - DOMAIN,cdn.usefathom.com,fake-ip
     - MATCH,real-ip
   nameserver:
     - 2606:4700:4700::1111
@@ -68,5 +83,28 @@ rules:
   - DOMAIN-SUFFIX,anthropic.com,hinet
   - DOMAIN-SUFFIX,claude.ai,hinet
   - DOMAIN-SUFFIX,claude.com,hinet
+  - DOMAIN-SUFFIX,clau.de,hinet
+  - DOMAIN-SUFFIX,claudemcpclient.com,hinet
+  - DOMAIN-SUFFIX,claudemcpcontent.com,hinet
   - DOMAIN-SUFFIX,claudeusercontent.com,hinet
+  # CDN and static assets
+  - DOMAIN,servd-anthropic-website.b-cdn.net,hinet
+  - DOMAIN,anthropic.com.cdn.cloudflare.net,hinet
+  # Authentication and content
+  - DOMAIN,anthropic.auth0.com,hinet
+  - DOMAIN,anthropic-com.ghost.io,hinet
+  # Shared telemetry services
+  - DOMAIN-SUFFIX,sentry.io,hinet
+  - DOMAIN-SUFFIX,statsigapi.net,hinet
+  - DOMAIN,browser-intake-us5-datadoghq.com,hinet
+  - DOMAIN-KEYWORD,datadog,hinet
+  - DOMAIN-KEYWORD,sift,hinet
+  # Shared support widgets
+  - DOMAIN-SUFFIX,intercom.io,hinet
+  - DOMAIN-SUFFIX,intercomcdn.com,hinet
+  - DOMAIN,cdn.usefathom.com,hinet
+  # Address fallbacks
+  - IP-CIDR,160.79.104.0/21,hinet,no-resolve
+  - IP-CIDR6,2607:6bc0::/32,hinet,no-resolve
+  - IP-ASN,399358,hinet,no-resolve
   - MATCH,DIRECT
